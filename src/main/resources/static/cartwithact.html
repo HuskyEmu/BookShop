@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Shopping Cart</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        #summary {
+            font-size: 1.2em;
+        }
+
+        .summary-price {
+            float: right;
+            color: #333;
+        }
+
+        .summary-total {
+            float: right;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e64a74;
+            /* Match the red color for the total */
+        }
+
+        .total-price {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header"></div>
+    <div class="container">
+        <h1>購物車</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        <div class="selectAll">
+                            <input type="checkbox" aria-label="商品全部選取" class="input-checkbox" id="select-all">
+                            <i class="bi bi-checkbox-off" aria-hidden="true"></i>
+                        </div>
+                    </th>
+                    <th>商品明細</th>
+                    <th>數量</th>
+                    <th>售價</th>
+                    <th>優惠後價格</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="shoppingcart-table-body">
+            </tbody>
+        </table>
+        <div id="summary" class="mt-3">
+            <p>已選擇 <span id="selected-count" style="color:red; font-size:20px; font-weight:bold;">0</span> 件商品</p>
+            <p id="discount-info" style="color: green; font-weight: bold;"></p>
+            <p>訂單小計: <span id="subtotal-price" class="summary-price">NT$ 0</span></p>
+            <p>促銷折抵: <span id="discount-price" class="summary-price">-NT$ 0</span></p>
+            <div id="applied-discounts">
+                <!-- 這裡會顯示已套用的優惠 -->
+            </div>
+            <p class="total-price">訂單總計: <span id="total-price" class="summary-total">NT$ 0</span></p>
+        </div>
+
+
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary" id="continue-shopping">繼續購物</button>
+            <button type="button" class="btn btn-primary" id="checkout">前往結帳</button>
+        </div>
+    </div>
+
+    <script>
+        var userMemberId = sessionStorage.userMemberId;
+        var apiUrl = 'http://localhost:8080/shoppingcarts/' + userMemberId;
+
+        $(document).ready(function () {
+            // 初次加載時更新
+            
+            updateSummary();
+
+            // 當選取狀態改變時更新
+            $('#shoppingcart-table-body').on('change', '.item-checkbox', function () {
+                
+                updateSummary();
+            });
+
+            // 當刪除商品時更新
+            $('#shoppingcart-table-body').on('click', '.delete-shoppingcart', function () {
+                
+                updateSummary();
+            });
+            
+            loadShoppingcarts();
+
+            // Load shopping carts data
+            function loadShoppingcarts() {
+                $('#header').load('./common/header_login.html');
+                $.get(apiUrl)
+                    .done(function (data) {
+                        $('#shoppingcart-table-body').empty();
+                        applyDiscounts(data.shoppingcartViews, data.activities);
+                    });
+            }
+
+            // Apply discounts based on the activities
+            function applyDiscounts(cartItems, activities) {
+                var subtotalPrice = 0.00;//全部金額
+                var discountTotal = 0.00;
+                var selectedCount = 0;
+                var appliedDiscounts = [];
+                var disArray = [];
+                var disArrayinfo = [];
+
+                let discountedPrice = 0;
+                let appliedDiscount = ''; // 用來儲存已應用的優惠信息
+
+                $('#applied-discounts').empty(); // 清空之前的優惠信息
+
+                $.each(cartItems, function (i, item) {
+
+                    subtotalPrice += item.price;
+
+                    selectedCount++;
+
+                    var detail = '<strong>' + item.bookName + '</strong><br>' +
+                        '作者: ' + item.author + '<br>' +
+                        '出版社: ' + item.publisherName;
+                    var row = '<tr>' +
+                        '<td><input type="checkbox" class="item-checkbox" data-bookId="' + item.bookId + '" data-quantity="' + item.quantity + '" checked></td>' +
+                        '<td>' + detail + '</td>' +
+                        '<td>' + item.quantity + '</td>' +
+                        '<td>' + item.price.toFixed(0) + '</td>' +
+                        '<td id="dis' + i + '">' + item.price.toFixed(0) + '</td>' +
+                        '<td><button type="button" class="delete-shoppingcart btn btn-danger btn-sm" data-id="' + item.bookId + '"><i class="bi bi-trash"></i></button></td>' +
+                        '</tr>';
+                    $('#shoppingcart-table-body').append(row);
+
+                    console.log("Book ID: ", item.bookId);
+                    console.log("Quantity: ", item.quantity);
+                });
+
+                $.each(activities, function (i, activity) {
+                    console.log("activity.info：" + activity.info);
+                    var tmp = subtotalPrice;
+                    console.log("selectedCount：" + selectedCount);
+                    if (activity.status) {
+                        let threshold = parseFloat(activity.info.match(/\d+/g)[0]);
+                        console.log("threshold：" + threshold);
+                        let discountAmount = parseFloat(activity.info.match(/\d+/g)[1]);
+                        console.log("discountAmount：" + discountAmount);
+
+                        if (threshold > 10) {
+                            if (tmp >= threshold && activity.info.includes('少')) {
+                                tmp = subtotalPrice - discountAmount;
+                                console.log("subtotalPrice " + subtotalPrice);
+                                console.log("tmp: " + tmp);
+                                appliedDiscount = activity.info;
+                                disArray.push(tmp);
+                                disArrayinfo.push(activity.info);
+                            }
+                            else if (tmp >= threshold && activity.info.includes('打')) {
+                                tmp = 0;
+                                $.each(cartItems, function (i, c) {
+                                    tmp = tmp + c.price * activity.discountRate;
+                                    var k = '#dis' + i;
+                                    $(k).text(c.price * activity.discountRate);
+                                })
+                                appliedDiscount = activity.info;
+                                disArray.push(tmp);
+                                disArrayinfo.push(activity.info);
+                            }
+                        } else {
+                            if (selectedCount >= threshold && activity.info.includes('少')) {
+
+                                tmp = subtotalPrice - discountAmount;
+                                console.log("subtotalPrice " + subtotalPrice);
+                                appliedDiscount = activity.info;
+                                disArray.push(tmp);
+                                disArrayinfo.push(activity.info);
+                            }
+                            else if (selectedCount >= threshold && activity.info.includes('打')) {
+                                tmp = 0;
+                                $.each(cartItems, function (i, c) {
+                                    tmp = tmp + c.price * activity.discountRate;
+                                    console.log("price:" + c.price);
+                                    console.log("discountRate:" + activity.discountRate);
+                                    var k = '#dis' + i;
+                                    console.log("tmp計算打折:" + tmp);
+                                    $(k).text(c.price * activity.discountRate);
+                                })
+                                appliedDiscount = activity.info;
+                                disArray.push(tmp);
+                                disArrayinfo.push(activity.info);
+                            }
+                        }
+                    }
+
+                });
+                tmp = [];
+                disArray.forEach((a, i) => {
+                    tmp[i] = a;
+                });
+                console.log("tmp:" + tmp);
+                console.log("disArray:" + disArray);
+                subtotalP = disArray.sort((x, y) => x - y);
+                console.log("tmp:" + tmp);
+                console.log("disArray:" + disArray);
+                subtotalPrice = subtotalP[0];
+                appliedDiscounts = disArrayinfo[tmp.findIndex(e => e == subtotalPrice)];
+
+                $('#applied-discounts').html('<p>已應用優惠:</p><ul>' +
+                    appliedDiscounts +
+                    '</ul>');
+
+                subtotalPrice = Math.round(subtotalPrice);
+                discountTotal = Math.round(discountTotal);
+                var totalPrice = subtotalPrice - discountTotal;
+
+                $('#selected-count').text(selectedCount);
+                $('#subtotal-price').text('NT$ ' + subtotalPrice.toLocaleString());
+                $('#discount-price').text('-NT$ ' + discountTotal.toLocaleString());
+                $('#total-price').text('NT$ ' + totalPrice.toLocaleString());
+
+
+                 
+            }
+
+            // Handle select all / deselect all
+            $('#select-all').change(function () {
+                var isChecked = $(this).is(':checked');
+                $('.item-checkbox').prop('checked', isChecked);
+                updateSummary();
+            });
+
+            // Update summary when individual item checkbox is changed
+            $('#shoppingcart-table-body').on('change', '.item-checkbox', function () {
+                updateSummary();
+            });
+
+            // Delete shopping cart item
+            $('#shoppingcart-table-body').on('click', '.delete-shoppingcart', function () {
+                var bookId = $(this).data('id');
+                var memberId = userMemberId; // 可以從 apiUrl 或其他地方動態獲取
+                console.log("mid:"+memberId);
+                console.log("bid:"+bookId);
+                $.ajax({
+                    url: 'http://localhost:8080/shoppingcarts/' + memberId + '/' + bookId,
+                    type: 'DELETE'
+                })
+                    .done(function () {
+                        loadShoppingcarts();
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('Failed to delete shopping cart item: ' + errorThrown);
+                    });
+            });
+
+            // Continue Shopping button
+            $('#continue-shopping').click(function () {
+                // Implement redirect to continue shopping page
+                window.location.href = 'bookIndex3.html';
+            });
+
+            // Proceed to Checkout button
+            $('#checkout').click(function () {
+                var selectedItems = [];
+                $('.item-checkbox:checked').each(function () {
+                    var $row = $(this).closest('tr');
+                    var bookId = $(this).data('bookid');
+                    var quantity = parseInt($(this).data('quantity'));
+                    var price = Math.round(parseFloat($row.find('td:eq(4)').text()));
+
+                    console.log("Selected Book ID: ", bookId);
+                    console.log("Selected Quantity: ", quantity);
+
+                    selectedItems.push({
+                        bookId: bookId,
+                        bookName: $row.find('td:eq(1) strong').text(),
+                        quantity: quantity,
+                        price: price
+                    });
+                });
+
+                sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+
+                console.log("Selected Items Stored: ", selectedItems);
+                // 跳轉到結帳頁面
+                window.location.href = 'checkorder.html';
+            });
+
+
+            sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+
+            // 跳轉到結帳頁面
+            window.location.href = './checkorder.html';
+        });
+
+
+        // Update summary function
+        function updateSummary() {
+            var selectedCount = 0;
+            var subtotalPrice = 0.00;
+            var discountTotal = 0.00;
+
+            $('.item-checkbox:checked').each(function () {
+                var $row = $(this).closest('tr');
+                selectedCount++;
+                var originalPrice = parseFloat($row.find('td:eq(3)').text());
+                var discountedPrice = parseFloat($row.find('td:eq(4)').text());
+
+                subtotalPrice += originalPrice;
+                discountTotal += (originalPrice - discountedPrice);
+            });
+
+            var totalPrice = subtotalPrice - discountTotal;
+
+            // 將所有數字四捨五入為整數
+            subtotalPrice = Math.round(subtotalPrice);
+            discountTotal = Math.round(discountTotal);
+            totalPrice = Math.round(totalPrice);
+
+            // 更新頁面顯示
+            $('#selected-count').text(selectedCount);
+            $('#subtotal-price').text('NT$ ' + subtotalPrice.toLocaleString());
+            $('#discount-price').text('-NT$ ' + discountTotal.toLocaleString());
+            $('#total-price').text('NT$ ' + totalPrice.toLocaleString());
+
+            // 將折扣後價格和訂單總計存入 sessionStorage
+            sessionStorage.setItem('discountedPrices', JSON.stringify({
+                subtotal: subtotalPrice,
+                discount: discountTotal,
+                total: totalPrice
+            }));
+        }
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<title>
+		Manage - Books
+	</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<style>
+		th ,td{
+			width: 30px;
+		}
+		.mid{
+			margin: 15px;
+		}
+		.thmid{
+			text-align:center;
+			vertical-align:middle;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="header"></div>
+	<div class="mid">
+		<h1>
+			Manage - Books 書籍管理
+		</h1>
+		<table class="table table-striped table-bordered border-primary">
+			<thead>
+				<tr>
+					<th class="thmid" rowspan="2">bookID</th>
+					<th>bookName</th>
+					<th>author</th>
+					<th>isbn</th>
+					<th>category</th>
+					<th>publisherID</th>
+					<th>image</th>
+					<th>price</th>
+					<th>salesQuantity</th>
+					<th>totalRating</th>
+					<th>addedTime</th>
+					<th class="thmid" rowspan="2">Action</th>
+				</tr>
+				<tr>
+					<th colspan="10">description</th>
+				</tr>
+			</thead>
+
+			<tbody id="book-table-body">
+			</tbody>
+
+			<tfoot>
+				<tr>
+					<td class="thmid" rowspan="2"><input type="hidden" id="book-bookId">Create or Update</td>
+					<td><input type="text" id="book-bookName" size="15"></td>
+					<td><input type="text" id="book-author"size="15"></td>
+					<td><input type="text" id="book-isbn"size="15"></td>
+					<td><input type="text" id="book-category"size="15"></td>
+					<td>
+						<div id="Select-publisherName">
+							<input type="text" id="book-publisherId"size="15">
+						</div>
+					</td>
+					<td><input type="text" id="book-image"size="15"></td>
+					<td><input type="text" id="book-price"size="15"></td>
+					<td><input type="text" id="book-salesQuantity"size="15"></td>
+					<td><input type="text" id="book-totalRating"size="15"></td>
+					<td><input type="text" id="book-addedTime"></td>
+					<td rowspan="2">
+						<div id="creatUpdat">
+							<button type="button" id="create-book" class="btn btn-primary">
+								<i class="bi bi-person-plus"></i> Create
+							</button>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="10"><textarea id="book-description" rows="3" cols="250"></textarea></td>
+				</tr>
+			</tfoot>
+
+		</table>
+	</div>
+	<script>
+		var apiUrl = 'http://localhost:8080/book';
+
+		$(document).ready(function () {
+			sessionStorage.setItem("a", "test");
+			// Load initial books data
+			loadBooks();
+			getPublisherName();
+
+			var tt = sessionStorage.getItem("a");
+			console.log(tt);
+			// Load books data
+			function loadBooks() {
+				$('#header').load('./common/header_admin.html');
+				$.get(apiUrl + '/showall')
+					.done(function (data) {
+						$('#book-table-body').empty();
+						$.each(data, function (i, book) {
+							var row =
+								'<tr>' +
+									'<td class="thmid" rowspan="2">' + book.bookId + '</td>' +
+									'<td>' + book.bookName + '</td>' +
+									'<td>' + book.author + '</td>' +
+									'<td>' + book.isbn + '</td>' +
+									'<td>' + book.category + '</td>' +
+									'<td id="change-'+book.publisherId+i+'">' + book.publisherId + '</td>' +
+									'<td><img  src="' + book.image + '"  style="height: 100px; object-fit: contain;"class="card-img-top zoom-image " alt="Card image"></td>' +
+									'<td>' + book.price + '</td>' +
+									'<td>' + book.salesQuantity + '</td>' +
+									'<td>' + book.totalRating + '</td>' +
+									'<td>' + book.addedTime + '</td>' +
+									'<td>' +
+										'<button type="button" class="btn btn-primary edit-book" data-id="' + book.bookId + '"><i class="bi bi-pencil-square"></i> Edit</button>' +
+									'</td>' +
+								'</tr>' +
+								'<tr>' +
+									'<td colspan="10">' + book.descriptioned + '</td>' +
+									'<td>' +
+										'<button type="button" class="btn btn-primary delete-book" data-id="' + book.bookId + '"><i class="bi bi-person-dash"></i> Delete</button>' +
+									'</td>' +
+								'</tr>';
+							$('#book-table-body').append(row);
+							getPublisherNameById(book.publisherId,i);
+							
+						});
+					});
+			}
+
+			// Edit book
+			$('#book-table-body').on('click', '.edit-book', function () {
+				var id = $(this).data('id');
+				console.log(id);
+				$.get(apiUrl + '/bi/' + id)
+					.done(function (book) {
+						$('#book-bookId').val(book.bookId);
+						$('#book-bookName').val(book.bookName);
+						$('#book-author').val(book.author);
+						$('#book-isbn').val(book.isbn);
+						$('#book-category').val(book.category);
+						$('#book-publisherId').val(book.publisherId);
+						$('#book-image').val(book.image);
+						$('#book-price').val(book.price);
+						$('#book-salesQuantity').val(book.salesQuantity);
+						$('#book-totalRating').val(book.totalRating);
+						$('#book-addedTime').val(book.addedTime);
+						$('#book-description').val(book.description);
+						$('#creatUpdat').empty();
+                        $('#creatUpdat').append(
+                        		'<button type="button" id="update-book" class="btn btn-primary"><i class="bi bi-person-gear"></i> Update</button>'+
+                        		'<button type="button" id="Cancel" class="btn btn-primary"><i class="bi bi-person-gear"></i> Cancel</button>');
+					})
+					.fail(function (jqXHR, textStatus, errorThrown) {
+						alert('Failed to load book: ' + errorThrown);
+					});
+			});
+
+			// Create new book
+			$('body').on("click", '#create-book',function () {
+				var bookId = $('#book-bookId').val();
+				var bookName = $('#book-bookName').val();
+				var author = $('#book-author').val();
+				var isbn = $('#book-isbn').val();
+				var category = $('#book-category').val();
+				var publisherId = $('#book-publisherId').val();
+				var image = $('#book-image').val();
+				var price = $('#book-price').val();
+				var salesQuantity = $('#book-salesQuantity').val();
+				var totalRating = $('#book-totalRating').val();
+				var addedTime = $('#book-addedTime').val();
+				var description = $('#book-description').val();
+				var book = {
+					bookId: bookId, bookName: bookName, author: author,
+					isbn: isbn, category: category, publisherId: publisherId,
+					image: image, price: price, salesQuantity: salesQuantity,
+					totalRating: totalRating, addedTime: addedTime, description: description
+				};
+				createBook(book);
+			});
+
+			// Create book
+			function createBook(book) {
+				$.ajax({
+					url: apiUrl + '/upload',
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify(book)
+				})
+					.done(function () {
+						clearForm();
+						loadBooks();
+					})
+					.fail(function (jqXHR, textStatus, errorThrown) {
+						alert('Failed to create book: ' + errorThrown);
+					});
+			}
+
+			// Update existing book
+			$('body').on("click", '#update-book', function () {
+				var bookId = $('#book-bookId').val();
+				var bookName = $('#book-bookName').val();
+				var author = $('#book-author').val();
+				var isbn = $('#book-isbn').val();
+				var category = $('#book-category').val();
+				var publisherId = $('#book-publisherId').val();
+				var image = $('#book-image').val();
+				var price = $('#book-price').val();
+				var salesQuantity = $('#book-salesQuantity').val();
+				var totalRating = $('#book-totalRating').val();
+				var addedTime = $('#book-addedTime').val();
+				var description = $('#book-description').val();
+				var book = {
+					bookId: bookId, bookName: bookName, author: author,
+					isbn: isbn, category: category, publisherId: publisherId,
+					image: image, price: price, salesQuantity: salesQuantity,
+					totalRating: totalRating, addedTime: addedTime, description: description
+				};
+				updateBook(book);
+			});
+
+			// Update book
+			function updateBook(book) {
+				console.log(book.bookId);
+				$.ajax({
+					url: apiUrl + '/' + book.bookId,
+					type: 'PUT',
+					contentType: 'application/json',
+					data: JSON.stringify(book)
+				})
+					.done(function () {
+						clearForm();
+						$('#creatUpdat').empty();
+						$('#creatUpdat').append('<button type="button" id="create-book" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create</button>');
+						loadBooks();
+					})
+					.fail(function (jqXHR, textStatus, errorThrown) {
+						alert('Failed to update book: ' + errorThrown);
+					});
+			}
+
+			// Delete book
+			$('#book-table-body').on('click', '.delete-book', function () {
+				var id = $(this).data('id')
+				$.ajax({
+					url: apiUrl + '/' + id,
+					type: 'DELETE'
+				})
+					.done(function () {
+						loadBooks();
+					})
+					.fail(function (jqXHR, textStatus, errorThrown) {
+						alert('Failed to delete book: ' + errorThrown);
+					});
+			});
+
+			$('body').on('click', '#Cancel', function () {
+				console.log("#clear-form");
+				clearForm();
+				$('#creatUpdat').empty();
+				$('#creatUpdat').append('<button type="button" id="create-book" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create</button>');
+			});
+
+			// Clear form
+			function clearForm() {
+				$('#book-bookId').val("");
+				$('#book-bookName').val("");
+				$('#book-author').val("");
+				$('#book-isbn').val("");
+				$('#book-category').val("");
+				$('#book-publisherId').val("");
+				$('#book-image').val("");
+				$('#book-price').val("");
+				$('#book-salesQuantity').val("");
+				$('#book-totalRating').val("");
+				$('#book-addedTime').val("");
+				$('#book-description').val("");
+			}
+			
+			function getPublisherName(){
+				$.get("http://localhost:8080/publisher")
+				.done(function (data) {
+					$('#Select-publisherName').empty();
+					var row = 
+						'<select class="form-select" aria-label="Default select example" id="book-publisherId">'+
+							'<option selected>出版社</option>';
+					$.each(data, function (i, publisher) {
+						row = row + '<option value="'+publisher.publisherId+'">'+publisher.publisherName+'</option>';
+						
+					});
+					row = row + '</select>';
+					$('#Select-publisherName').append(row);
+				});
+			}	
+			
+ 			function getPublisherNameById(publisherId,i){
+				var tmp;
+				$.get("http://localhost:8080/publisher/publisherName/" + publisherId)
+				.done(function (data) {
+					console.log(data);
+					var tmp = "#change-"+publisherId+i
+					$(tmp).text(data);
+				});
+			} 
+ 			
+		});
+	</script>
+</body>
+
+</html>

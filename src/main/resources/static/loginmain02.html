@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            height: 100vh;
+            background-color: #ccdeeec3;
+        }
+        .login-container {
+            text-align: center; /* 文字居中 */
+            background: rgb(234, 207, 249);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.495);
+        }
+        .login-container h2 {
+            margin-bottom: 20px;
+        }
+        .login-container input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .login-container button {
+            display: inline-block;
+            width: 60%;
+            padding: 10px;
+            background-color: #fab4f4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px; /* 按钮与链接之间的距离 */
+        }
+        .login-container button:hover {
+            background-color: #fd5fc3;
+        }
+        .login-container .links {
+            margin-top: 5px; /* 表单与链接之间的距离 */
+        }
+        .login-container .links a {
+            font-size: small;
+            color: #007bff;
+            text-decoration: none;
+            margin: 0 2px;
+        }
+        .login-container .links a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            font-size: small;
+            font-weight: bold;
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="text" id="account" placeholder="Account" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <div>
+                <button type="submit" id="loginbutton">登入</button>
+                <div class="links">
+                    <a href="./forget.html">忘記密碼</a>
+                    <a href="./register.html">加入會員</a>
+                </div>
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </form>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var apiUrl = 'http://localhost:8080/mem';
+
+            // 阻止表單的默認提交行為
+            $('#loginForm').submit(function(event) {
+                event.preventDefault(); // 防止表單提交
+
+                var user = {
+                    account: $('#account').val(),
+                    password: $('#password').val()
+                };
+
+                $('#error-message').text('');
+                
+                // 先檢查用戶是否為管理者
+                checkUserLoginAdmin(user, function(result) {
+                    if (result.success) {
+                        $('#error-message').text(' ' );
+                        clearForm();
+                        //進入到管理者頁面
+                        window.location.href = './Publisher.html'; // 管理者畫面
+                    } else {
+                        //如果不是管理者，一般用戶登入
+                        checkUserLogin(user);
+                    }
+                });
+            });
+
+            // 檢查用戶登入-admin
+            function checkUserLoginAdmin(user, callback) {
+                $.ajax({
+                    url: apiUrl + '/checkLoginAdmin',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(user),
+                    success: function(response) {
+                        var result = {
+                            success: response.success
+                            //success: response.isAdminAccount && response.isAdminPassword
+                        };
+
+                        if (result.success) { //管理者登入成功
+                            $('#error-message').text(' ' );
+                            clearForm();
+
+                            //存在sessionStorage
+                            sessionStorage.setItem("loginstatus", "admin");
+                            alert('歡迎管理者');
+                        }
+                        callback(result);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        clearForm();
+                        $('#error-message').text('無法檢查帳號或密碼 ' + errorThrown);
+                    }
+                });
+            }
+
+            ///////////////檢查用戶登入
+            function checkUserLogin(user) {
+                $.ajax({
+                url: apiUrl + '/login',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(user),
+                success: function(response) {
+                    // response 是一個包含帳號和密碼檢查結果的對象
+                    var existsByAccount = response.existsByAccount;
+                    var existsByPassword = response.existsByPassword;
+            
+                    if (existsByAccount && existsByPassword) { // 登入成功
+                        //存在sessionStorage
+                        sessionStorage.setItem("loginstatus", "user");
+                        sessionStorage.setItem("loginaccount", user.account);
+                        setSessionMemberId(user.account);
+                        $('#error-message').text(' ' );
+                        alert('登入成功');
+                        clearForm();
+                        window.location.href = './bookIndex3.html';
+                    } else if (existsByAccount) {
+                        clearForm();
+                        // 帳號存在但密碼錯誤
+                        $('#error-message').text('密碼錯誤!');
+                    } else {
+                        clearForm();
+                        // 帳號不存在
+                        $('#error-message').text('無此帳號!');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $('#error-message').text('無法登入: ' + errorThrown);
+                }
+                });
+            }
+
+            ///////////////確認登入狀態-沒用到先放著
+            function checkLoginStatus() {
+                $.ajax({
+                    url: apiUrl + '/profile',
+                    type: 'GET',
+                    success: function(response) {
+                        console.log('用戶已登入',response); // 用戶已登入
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log('用戶未登入');
+                    }
+                });
+            }
+
+            // 清除表單
+            function clearForm() {
+                $('#account').val('');
+                $('#password').val('');
+            }
+
+            function setSessionMemberId(user) {
+            	$.get('http://localhost:8080/mem/find/'+user)
+                .done(function (data) {
+                	sessionStorage.setItem("userMemberId", data.memberId);
+                    userMember=data;
+                    console.log("test01:"+userMember);
+                });
+            }
+
+
+        });
+    </script>
+</body>
+</html>
+
+

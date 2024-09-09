@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forget</title>
+<style>
+     body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center; /*水平*/
+            align-items: center; /*垂直*/
+            height: 100vh;
+            background-color: #ccdeeec3;
+        }
+        .login-container {
+            text-align: center;  /*置中*/
+            background: rgb(234, 207, 249);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.495);
+            width: 60%; /* Adjust width as needed */
+            max-width: 400px; /* Set a maximum width */
+        }
+        .login-container h2 {
+            margin-bottom: 20px;
+        }
+        .login-container input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .login-container button {
+            display: inline-block;
+            width: 60%;
+            padding: 10px;
+            background-color: #fab4f4;
+            color: white;
+            border: none;
+            /*border-radius: 6px;*/
+            cursor: pointer;
+            margin-top: 10px;/* Space between button and links */
+        }
+        .login-container button:hover {
+            background-color: #fd5fc3;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+</style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>忘記密碼-更改密碼</h2>
+        <form id="forget2Form">
+            <input type="hidden" id="account" name="account">
+            <input type="hidden" id="email" name="email">
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="password" id="password2" placeholder="Password2" required>
+            <div>
+                <button type="submit" id="forget-user-2">提交</button>
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </form>
+    </div>
+</body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    //確認有此帳號及信箱才可以到下一頁改密碼
+    var apiUrl = 'http://localhost:8080/mem';
+
+    $(document).ready(function() {
+            // 防止表單的默認提交行為
+            $('#forget2Form').submit(function(event) {
+                event.preventDefault(); // 阻止表單提交
+
+
+
+                // Get account and email from URL parameters
+                //URL方式較不嚴謹，資料易外流
+                var urlParams = new URLSearchParams(window.location.search);
+                var account = urlParams.get('account'); 
+                var email = urlParams.get('email');  
+                $('#account').val(account);
+                $('#email').val(email);
+
+                var password = $('#password').val();
+                var password2 = $('#password2').val();
+
+                if (password !== password2) {
+                    $('#error-message').text('兩次密碼輸入不一致!');
+                    return;
+                }
+
+                var data = {
+                    password: password // Only send the new password
+                };
+
+                updatePassword(account,email,data, function(response) {
+                    if (response) {
+                        alert('密碼修改成功!');
+                        window.location.href = './loginmain02.html'; // 密碼修改成功後重定向
+                    } else {
+                        $('#error-message').text('修改密碼時出錯 ' + result.message);
+                    }
+                });
+            });
+
+            // 修改密碼的函數
+            function updatePassword(account, email, data,  callback) {
+                console.log("Sending data:", data); // 查看數據
+                $.ajax({
+                    //url: apiUrl + '/updatePassword', // 確保這是正確的端點
+                    url: apiUrl + '/update/' + encodeURIComponent(account) + '/' + encodeURIComponent(email), // 使用 PUT
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data), // 發送 JSON 數據
+                    success: function(response) {
+                        callback(response); // Call the callback with the response
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        $('#error-message').text('無法修改密碼: ' + errorThrown);
+                    }
+                });
+            }
+        });
+    </script>
+</html>

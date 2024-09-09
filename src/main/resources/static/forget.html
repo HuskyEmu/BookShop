@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center; /*水平*/
+            align-items: center; /*垂直*/
+            height: 100vh;
+            background-color: #ccdeeec3;
+        }
+        .login-container {
+            text-align: center;  /*置中*/
+            background: rgb(234, 207, 249);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.495);
+            width: 60%; /* Adjust width as needed */
+            max-width: 400px; /* Set a maximum width */
+        }
+        .login-container h2 {
+            margin-bottom: 20px;
+        }
+        .login-container input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .login-container button {
+            display: inline-block;
+            width: 60%;
+            padding: 10px;
+            background-color: #fab4f4;
+            color: white;
+            border: none;
+            /*border-radius: 6px;*/
+            cursor: pointer;
+            margin-top: 10px;/* Space between button and links */
+        }
+        .login-container button:hover {
+            background-color: #fd5fc3;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>忘記密碼-確認身份</h2>
+        <form id="forgotForm">
+            <input type="text" id="account" placeholder="Account" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <div>
+                <button type="submit" id="forget-user-1">提交</button>
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </form>
+    </div>
+</body>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    //確認有此帳號及信箱才可以到下一頁改密碼
+    var apiUrl = 'http://localhost:8080/mem';
+
+
+    $(document).ready(function() {
+        // 確保阻止表單的默認提交行為
+        // Check if user exists
+        $('#forgotForm').submit(function(event) {
+            event.preventDefault(); // 防止表單提交
+
+            var account= $('#account').val();
+            var email = $('#email').val();
+            var user = {account: account, email: email};
+            
+            checkUserExists(user, function(result) {
+                if (result.success) {
+                    // Redirect to forget2 page
+                    //window.location.href = 'http://127.0.0.1:5500/final/forget2.html'; 
+                    window.location.href = './forget2.html?account=' + encodeURIComponent(account) + '&email=' + encodeURIComponent(email);
+                } else {
+                    if (result.existsByAccount) {
+                        $('#error-message').text('');
+                        clearForm();
+                        $('#error-message').text('信箱錯誤!');
+                    } else {
+                        $('#error-message').text('');
+                        clearForm();
+                        $('#error-message').text('無此帳號!');
+                    }
+                }
+            });
+                  
+        });
+
+        // Check if user exists
+        function checkUserExists(user, callback) {
+            console.log("Sending data:", user); // 查看數據
+            $.ajax({
+                url: apiUrl + '/checkUser', // API有這樣的端點
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(user), // 發送 JSON 數據
+                success: function(response) {
+                    // 假設返回的格式是 { existsByAccount: true, existsByEmail: false }
+                    var result = {
+                    existsByAccount: response.existsByAccount,
+                    existsByEmail: response.existsByEmail,
+                    success: response.existsByAccount && response.existsByEmail
+                    };
+                callback(result);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $('#error-message').text('無法檢查帳號或信箱是否存在 ' + errorThrown);
+                }
+            });
+        }
+
+        // Clear form
+        function clearForm() {
+            $('#account').val('');
+            $('#password').val('');
+            $('#password2').val('');
+            $('#email').val('');
+        }
+
+    });
+</script>
+
+</html>

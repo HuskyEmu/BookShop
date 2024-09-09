@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <style>
+        .relative {
+            position: relative;
+            width: 600px;
+            height: 550px;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <title>Book Detail</title>
+
+</head>
+
+<body class="container" style="max-width:1000px;">
+    <div id="header"></div>
+    <h2 object="*{book}"></h2>
+    <div style="height: 100px;"></div>
+    <div style="width:800px; height: 450px;">
+        <img th:src="${book.image}" height="450" alt="No Image" />
+
+        <!-- 購物車位置 -->
+        <a href="  " class="card-footer relative"><i class="bi bi-cart">加入購物車 </i></a>
+    </div>
+
+    <h6 th:text="@{|編號 :  ${book.bookId}|}"></h6>
+    <h3 th:text="@{|書名 :  ${book.bookName}|}"></h3>
+    <h4 th:text="@{|作者 :  ${book.author}|}"></h4>
+    <h5 th:text="@{|分類 :  ${book.category}|}"></h5>
+    <h5 th:text="@{|價格 :  ${book.price}|}"></h5>
+    <h6 th:text="@{|ISBN :  ${book.isbn}|}"></h6>
+    <hr>
+    </hr>
+    <h4>簡介 : </h4>
+    <h5 th:text="@{|${book.descriptioned}|}"></h5>
+
+
+</body>
+<script>
+    var headerUrl = 'http://localhost:8080/common/header_main.html';
+
+    $(document).ready(function () {
+        // Load initial publishers data
+        $('#header').load(headerUrl);
+    });
+
+    //購物車網址
+    var shopCartUrl = 'http://localhost:8080/book/addToCartTest';
+</script>
+
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        Manage - Publisher
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+    <div id="header"></div>
+    <div class="container">
+        <h1>
+            Manage - Publishers 出版社管理
+        </h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>PublisherID</th>
+                    <th>PublisherName</th>
+                    <th>Phone</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="publisher-table-body">
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th><input type="hidden" id="publisher-publisherId">Create or Update</th>
+                    <th><input type="text" id="publisher-publisherName"></th>
+                    <th><input type="text" id="publisher-phone"></th>
+                    <th>
+                        <div id="creatUpdat">
+                            <button type="button" id="create-publisher" class="btn btn-primary">
+                                <i class="bi bi-person-plus"></i> Create
+                            </button>
+                        </div>
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <p>
+        <!--     <form>
+        <label for="publisher-publisherId">PublisherId：</label>
+        <input type="text" id="publisher-publisherId"><br />
+        <label for="publisher-publisherName">PublisherName：</label>
+        <input type="text" id="publisher-publisherName"><br />
+        <label for="publisher-phone">Phone：</label>
+        <input type="text" id="publisher-phone"><br />
+        <button type="button" id="create-publisher">Create Publisher</button>
+        <button type="button" id="update-publisher">Update Publisher</button>
+    </form> -->
+        <script>
+            var apiUrl = 'http://localhost:8080/publisher';
+
+            $(document).ready(function () {
+                // Load initial publishers data
+                loadPublishers();
+
+                // Load publishers data
+                function loadPublishers() {
+                    console.log("loadPublishers");
+                    $('#header').load('./common/header_admin.html');
+                    $.get(apiUrl)
+                        .done(function (data) {
+                            $('#publisher-table-body').empty();
+                            $.each(data, function (i, publisher) {
+                                var row =
+                                    '<tr>' +
+                                    '<td>' + publisher.publisherId + '</td>' +
+                                    '<td>' + publisher.publisherName + '</td>' +
+                                    '<td>' + publisher.phone + '</td>' +
+                                    '<td>' +
+                                    '<button type="button" class="btn btn-primary edit-publisher" data-id="' + publisher.publisherId + '"><i class="bi bi-pencil-square"></i> Edit</button> ' +
+                                    '<button type="button" class="btn btn-primary delete-publisher" data-id="' + publisher.publisherId + '"><i class="bi bi-person-dash"></i> Delete</button>' +
+                                    '</td>' +
+                                    '</tr>';
+                                $('#publisher-table-body').append(row);
+                            });
+                        });
+                }
+
+                // Edit publisher
+                $('#publisher-table-body').on('click', '.edit-publisher', function () {
+                    var id = $(this).data('id');
+                    $.get(apiUrl + '/' + id)
+                        .done(function (publisher) {
+                            $('#publisher-publisherId').val(publisher.publisherId);
+                            $('#publisher-publisherName').val(publisher.publisherName);
+                            $('#publisher-phone').val(publisher.phone);
+                            $('#creatUpdat').empty();
+                            $('#creatUpdat').append(
+                            		'<button type="button" id="update-publisher" class="btn btn-primary"><i class="bi bi-person-gear"></i> Update</button>'+
+                            		'<button type="button" id="Cancel" class="btn btn-primary"><i class="bi bi-person-gear"></i> Cancel</button>');
+                        })
+                        .fail(function (jqXHR, textStatus, errorThrown) {
+                            alert('Failed to load publisher: ' + errorThrown);
+                        });
+                });
+
+                // Create new publisher
+                $('body').on("click", '#create-publisher', function () {
+                    var publisherId = $('#publisher-publisherId').val();
+                    var publisherName = $('#publisher-publisherName').val();
+                    var phone = $('#publisher-phone').val();
+                    var publisher = { publisherId: publisherId, publisherName: publisherName, phone: phone };
+                    createPublisher(publisher);
+                });
+
+                // Create publisher
+                function createPublisher(publisher) {
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(publisher)
+                    })
+                        .done(function () {
+                            clearForm();
+                            loadPublishers();
+                        })
+                        .fail(function (jqXHR, textStatus, errorThrown) {
+                            alert('Failed to create publisher: ' + errorThrown);
+                        });
+                }
+
+                // Update existing publisher
+                $('body').on("click", '#update-publisher', function () {
+                    var publisherId = $('#publisher-publisherId').val();
+                    var publisherName = $('#publisher-publisherName').val();
+                    var phone = $('#publisher-phone').val();
+                    var publisher = { publisherId: publisherId, publisherName: publisherName, phone: phone };
+                    updatePublisher(publisher);
+                });
+
+                // Update publisher
+                function updatePublisher(publisher) {
+                    console.log(publisher.publisherId);
+                    $.ajax({
+                        url: apiUrl + '/' + publisher.publisherId,
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify(publisher)
+                    })
+                        .done(function () {
+                            clearForm();
+                            $('#creatUpdat').empty();
+                            $('#creatUpdat').append('<button type="button" id="create-publisher" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create</button>');
+                            loadPublishers();
+                        })
+                        .fail(function (jqXHR, textStatus, errorThrown) {
+                            alert('Failed to update publisher: ' + errorThrown);
+                        });
+                }
+
+                // Delete publisher
+                $('#publisher-table-body').on('click', '.delete-publisher', function () {
+                    var id = $(this).data('id')
+                    $.ajax({
+                        url: apiUrl + '/' + id,
+                        type: 'DELETE'
+                    })
+                        .done(function () {
+                            loadPublishers();
+                        })
+                        .fail(function (jqXHR, textStatus, errorThrown) {
+                            alert('Failed to delete user: ' + errorThrown);
+                        });
+                });
+                
+                $('body').on("click", '#Cancel', function () {
+                	clearForm();
+                	$('#creatUpdat').empty();
+                    $('#creatUpdat').append('<button type="button" id="create-publisher" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create</button>');
+                });
+
+                // Clear form
+                function clearForm() {
+                    $('#publisher-publisherId').val('');
+                    $('#publisher-publisherName').val('');
+                    $('#publisher-phone').val('');
+                }
+            });
+        </script>
+</body>
+
+</html>

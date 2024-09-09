@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會員資料修改</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* 基本的樣式 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center; /* 水平置中 */
+            align-items: center; /* 垂直置中 */
+            height: 100vh;
+            background-color: #ccdeeec3;
+            margin: 0;
+        }
+
+        .form-container {
+            text-align: left; /* 調整為左對齊 */
+            background: rgb(234, 207, 249);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.495);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .form-container h1 {
+            margin-bottom: 20px;
+            text-align: center; /* 標題置中 */
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            flex: 0 0 150px; /* 固定標籤寬度 */
+            margin-bottom: 0;
+            font-weight: bold;
+            text-align: right; /* 靠右 */
+        }
+
+        .form-container input,
+        .form-container select {
+            flex: 1; /* 使輸入框自動填滿剩餘空間 */
+            padding: 5px; /* 減少內邊距 */
+            margin-left: 10px; /* 標籤與輸入框之間的間距 */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px; /* 減小字體大小 */
+            max-width: 300px; /* 設定最大寬度 */
+        }
+
+        .buttons {
+            display: flex; /* 使用 flexbox */
+            justify-content: center; /* 水平置中 */
+            margin-top: 20px;
+        }
+
+        .buttons button {
+            width: 160px;
+            padding: 10px;
+            background-color: #fab4f4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+
+        .buttons button:hover {
+            background-color: #fd5fc3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <h1>會員資訊</h1>
+        <h2> </h2>
+        <div class="form-group">
+            <label for="member-account">帳號:</label>
+            <input type="text" class="form-control" id="account" readonly>
+        </div>
+        <div class="form-group">
+            <label for="member-memberName">會員姓名:</label>
+            <input type="text" class="form-control" id="memberName">
+        </div>
+        <div class="form-group">
+            <label for="member-memberLevel">會員等級:</label>
+            <input type="text" class="form-control" id="memberLevel" readonly>
+        </div>
+        <div class="form-group">
+            <label for="member-phone">手機號碼:</label>
+            <input type="text" class="form-control" id="phone">
+        </div>
+        <div class="form-group">
+            <label for="member-email">信箱:</label>
+            <input type="text" class="form-control" id="email">
+        </div>
+        <div class="form-group">
+            <label for="member-totalAmount">總消費金額:</label>
+            <input type="text" class="form-control" id="totalAmount" readonly>
+        </div>
+        <div class="buttons">
+            <!--<button type="button" id="create-member">Create</button>-->
+            <button type="button" id="update-member">修改</button>
+            <button type="button" id="reset" >重設密碼</button>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var apiUrl = 'http://localhost:8080/mem';
+
+            // 獲取登入狀態
+            var loginStatus = sessionStorage.getItem("loginstatus");
+            var loginAccount = sessionStorage.getItem("loginaccount");
+            $('#account').val(loginAccount);
+
+            // 根據登入狀態獲取會員資料
+            if (loginStatus === 'user') {
+                getProfile();  
+            } else {
+                alert('您尚未登入或無權訪問該頁面');
+                // 重定向到登入頁面
+                window.location.href = 'http://127.0.0.1:5500/final02/loginmain02.html'; // 登入頁面URL
+            }
+
+            // 獲取會員資料
+            function getProfile() {
+                $.ajax({
+                    url: apiUrl + '/find/' + loginAccount,
+                    type: 'GET',
+                    success: function(response) {
+                        $('#account').val(response.account);
+                        $('#memberName').val(response.memberName);
+                        $('#memberLevel').val(response.memberLevel);
+                        $('#phone').val(response.phone);
+                        $('#email').val(response.email);
+                        $('#totalAmount').val(response.totalAmount);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log('Error', jqXHR);
+                        console.log('Text Status', textStatus);
+                        console.log('Error Thrown', errorThrown);
+                        alert('無法獲取會員資料: ' + errorThrown);
+                    }
+                });
+            }
+
+            // 綁定點擊事件到“修改”按鈕
+            $('#update-member').click(function() {
+                updateProfile();
+            });
+
+            // 更新會員資料
+            function updateProfile() {
+                var updatedMember = {
+                    memberName: $('#memberName').val(),
+                    phone: $('#phone').val(),
+                    email: $('#email').val()
+                };
+
+                $.ajax({
+                    url: apiUrl + '/update/' + loginAccount,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(updatedMember),
+                    success: function(response) {
+                        alert('會員資料已更新');
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        alert('無法更新會員資料: ' + errorThrown);
+                    }
+                });
+            }
+
+            
+            // 綁定點擊事件到“重設密碼”按鈕
+                $('#reset').click(function() {
+                gotopassword();
+            });
+
+            // 重設密碼的函數
+            function gotopassword() {
+                window.location.href = 'http://127.0.0.1:5500/final02/forget.html';
+            }
+
+
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+               font-family: Arial, sans-serif;
+               display: flex;
+               justify-content: center; /*水平*/
+               align-items: center; /*垂直*/
+               height: 100vh;
+               background-color: #ccdeeec3;
+           }
+           .login-container {
+               text-align: center;  /*置中*/
+               background: rgb(234, 207, 249);
+               padding: 20px;
+               border-radius: 8px;
+               box-shadow: 0 0 10px rgba(0, 0, 0, 0.495);
+               width: 60%; /* Adjust width as needed */
+               max-width: 400px; /* Set a maximum width */
+           }
+           .login-container h2 {
+               margin-bottom: 20px;
+           }
+           .login-container input {
+               width: 80%;
+               padding: 10px;
+               margin: 10px 0;
+               border: 1px solid #ddd;
+               border-radius: 4px;
+           }
+           .login-container button {
+               display: inline-block;
+               width: 60%;
+               padding: 10px;
+               background-color: #fab4f4;
+               color: white;
+               border: none;
+               /*border-radius: 6px;*/
+               cursor: pointer;
+               margin-top: 10px;/* Space between button and links */
+           }
+           .login-container button:hover {
+               background-color: #fd5fc3;
+           }
+           .error-message {
+               color: red;
+               margin-top: 10px;
+           }
+   </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Register</h2>
+        <form id="registerForm">
+            <input type="hidden" id="user-id">
+
+            <input type="hidden" id="memberLevel">
+
+            <input type="hidden" id="totalAmount">
+
+            <input type="text" id="account" placeholder="Account" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="password2" id="password2" placeholder="Password Again" required>
+            <input type="text" id="memberName" placeholder="Name" required>
+            <input type="text" id="phone" placeholder="Phone" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <div>
+                <button type="submit" id="create-user">註冊</button>
+            </div>
+            <div id="error-message" class="error-message" ></div>
+        </form>
+    </div>
+</body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    //確認無此帳號及信箱才可以註冊
+    var apiUrl = 'http://localhost:8080/mem';
+
+
+    $(document).ready(function() {
+        // 確保阻止表單的默認提交行為
+        // 阻止表單的默認提交行為
+        $('#registerForm').submit(function(event) {
+            event.preventDefault(); // 防止表單提交
+
+            var account = $('#account').val();
+            var email = $('#email').val();
+            var password = $('#password').val();
+            var password2 = $('#password2').val();
+            var memberName = $('#memberName').val();
+            var phone = $('#phone').val();
+            var user = { account: account, password: password, email: email ,memberName:memberName,phone:phone};
+
+            checkUserExists(user, function(result) {
+                if (result.existsByAccount || result.existsByEmail) { // 有此帳號或信箱
+                    if (result.existsByAccount) {
+                        $('#error-message').text('已有此帳號!');
+                    } else if (result.existsByEmail) {
+                        $('#error-message').text('已有此信箱!');
+                    }
+                } else { // 無此帳號信箱
+                    if (password === password2) {
+                        $('#error-message').text('');
+                        createUser(user);
+                        alert('註冊成功!');
+                        // Redirect to login page
+                        window.location.href = './loginmain02.html'; 
+                    } else {
+                        $('#error-message').text('');
+                        clearForm();
+                        $('#error-message').text('密碼不一致，請重新輸入!');
+                    }
+                }
+            });
+        });
+
+        // 檢查用戶是否存在
+        function checkUserExists(user, callback) {
+            $.ajax({
+                url: apiUrl + '/checkUser', // 確保這是正確的端點
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(user), // 發送 JSON 數據
+                success: function(response) {
+                    // 假設返回的格式是 { existsByAccount: true, existsByEmail: false }
+                    var result = {
+                        existsByAccount: response.existsByAccount,
+                        existsByEmail: response.existsByEmail
+                    };
+                    callback(result);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $('#error-message').text('無法檢查帳號或信箱是否存在 ' + errorThrown);
+                }
+            });
+        }
+
+    
+        // Create user
+        function createUser(user) {
+            $.ajax({
+                url: apiUrl,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(user)
+            })
+            .done(function() {
+                clearForm();
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                alert('Failed to create user: ' + errorThrown);
+            });
+        }
+
+        // Clear form
+        function clearForm() {
+            $('#account').val('');
+            $('#password').val('');
+            $('#password2').val('');
+            $('#memberName').val('');
+            $('#phone').val('');
+            $('#email').val('');
+        }
+});
+</script>
+</html>

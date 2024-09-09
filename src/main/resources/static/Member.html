@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        Manage - Member
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+    <div id="header"></div>
+    <div class="container">
+        <h1>
+            Manage - Members 會員管理
+        </h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>MemberID</th>
+                    <th>MemberName</th>
+                    <th>Phone</th>
+                    <th>MemberLevel</th>
+                    <th>Account</th>
+                    <th>Password</th>
+                    <th>Email</th>
+                    <th>TotalAmount</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="member-table-body">
+            </tbody>
+            
+            <tfoot>
+                <tr>
+                    <th><input type="hidden" class="form-control" id="member-memberId">Create or Update</th>
+                    <th><input type="text" class="form-control" id="member-memberName" size="15"></th>
+                    <th><input type="text" class="form-control" id="member-phone" size="15"></th>
+                    <th>
+                        <!-- <input type="text" class="form-control" id="member-memberLevel" size="15"> -->
+                        <select class="form-select" id="member-memberLevel">
+                            <option selected>Choose...</option>
+                            <option value="A">一般會員</option>
+                            <option value="B">VIP</option>
+                            <option value="C">VVIP</option>
+                        </select>
+                    </th>
+                    <th><input type="text" class="form-control" id="member-account" size="15"></th>
+                    <th><input type="text" class="form-control" id="member-password" size="15"></th>
+                    <th><input type="text" class="form-control" id="member-email" size="15"></th>
+                    <th><input type="text" class="form-control" id="member-totalAmount"></th>
+                    <th>
+                    	<div id="creatUpdat">
+                        	<button type="button" id="create-member" class="btn btn-primary">
+                        		<i class="bi bi-person-plus"></i> Create
+                        	</button>
+                        </div>
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+        <p>
+            <!--<form>
+	        <label for="member-memberId">MemberIDId：</label>
+	        <input type="text" id="member-memberId"><br />
+	
+	        <label for="member-memberName">MemberName：</label>
+	        <input type="text" id="member-memberName"><br />
+	
+	        <label for="member-phone">Phone：</label>
+	        <input type="text" id="member-phone"><br />
+	
+	        <label for="member-memberLevel">MemberLevel：</label>
+	        <input type="text" id="member-memberLevel"><br />
+	
+	        <label for="member-account">Account：</label>
+	        <input type="text" id="member-account"><br />
+	
+	        <label for="member-password">Password：</label>
+	        <input type="text" id="member-password"><br />
+	
+	        <label for="member-email">Email：</label>
+	        <input type="text" id="member-email"><br />
+	
+	        <label for="member-totalAmount">TotalAmount：</label>
+	        <input type="text" id="member-totalAmount"><br />
+	
+	        <button type="button" id="create-member">Create Member</button>
+	        <button type="button" id="update-member">Update Member</button>
+	    </form>-->
+
+    </div>
+    <script>
+        var apiUrl = 'http://localhost:8080/member';
+
+        $(document).ready(function () {
+            // Load initial members data
+            loadMembers();
+
+            // Load members data
+            function loadMembers() {
+                $('#header').load('./common/header_admin.html');
+                $.get(apiUrl)
+                    .done(function (data) {
+                        $('#member-table-body').empty();
+                        $.each(data, function (i, member) {
+                            var row = 
+                            '<tr>' +
+                                '<td>' + member.memberId + '</td>' +
+                                '<td>' + member.memberName + '</td>' +
+                                '<td>' + member.phone + '</td>' +
+                                '<td>' + member.memberLevel + '</td>' +
+                                '<td>' + member.account + '</td>' +
+                                '<td>' + member.password + '</td>' +
+                                '<td>' + member.email + '</td>' +
+                                '<td>' + member.totalAmount + '</td>' +
+                                '<td>'+
+                                    '<button type="button" class="btn btn-primary edit-member" data-id="' + member.memberId + '"><i class="bi bi-pencil-square"></i> Edit</button> ' +
+                                    '<button type="button" class="btn btn-primary delete-member" data-id="' + member.memberId + '"><i class="bi bi-person-dash"></i> Delete</button>'+
+                                '</td>' +
+                            '</tr>';
+                            $('#member-table-body').append(row);
+                        });
+                    });
+            }
+
+            // Create new member
+            $('body').on("click", '#create-member', function () {
+                var memberId = $('#member-memberId').val();
+                var memberName = $('#member-memberName').val();
+                var phone = $('#member-phone').val();
+                var memberLevel = $('#member-memberLevel').val();
+                var account = $('#member-account').val();
+                var password = $('#member-password').val();
+                var email = $('#member-email').val();
+                var totalAmount = $('#member-totalAmount').val();
+                var member = {
+                    memberId: memberId, memberName: memberName, phone: phone,
+                    memberLevel: memberLevel, account: account, password: password,
+                    email: email, totalAmount: totalAmount
+                };
+                createMember(member);
+            });
+
+            // Create member
+            function createMember(member) {
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(member)
+                })
+                    .done(function () {
+                        clearForm();
+                        loadMembers();
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('Failed to create member: ' + errorThrown);
+                    });
+            }
+
+            // Update existing member
+            $('body').on("click", '#update-member', function () {
+                var memberId = $('#member-memberId').val();
+                var memberName = $('#member-memberName').val();
+                var phone = $('#member-phone').val();
+                var memberLevel = $('#member-memberLevel').val();
+                var account = $('#member-account').val();
+                var password = $('#member-password').val();
+                var email = $('#member-email').val();
+                var totalAmount = $('#member-totalAmount').val();
+                var member = {
+                    memberId: memberId, memberName: memberName, phone: phone,
+                    memberLevel: memberLevel, account: account, password: password,
+                    email: email, totalAmount: totalAmount
+                };
+                updateMember(member);
+            });
+
+            // Update member
+            function updateMember(member) {
+                console.log(member.memberId);
+                $.ajax({
+                    url: apiUrl + '/' + member.memberId,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(member)
+                })
+                    .done(function () {
+                        clearForm();
+                        $('#creatUpdat').empty();
+                        $('#creatUpdat').append('<button type="button" id="create-member" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create</button>');
+                        loadMembers();
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('Failed to update member: ' + errorThrown);
+                    });
+            }
+
+            // Delete member
+            $('#member-table-body').on('click', '.delete-member', function () {
+                var id = $(this).data('id')
+                $.ajax({
+                    url: apiUrl + '/' + id,
+                    type: 'DELETE'
+                })
+                    .done(function () {
+                        loadMembers();
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('Failed to delete member: ' + errorThrown);
+                    });
+            });
+
+            // Edit member
+            $('#member-table-body').on('click', '.edit-member', function () {
+                var id = $(this).data('id');
+                $.get(apiUrl + '/' + id)
+                    .done(function (member) {
+                        $('#member-memberId').val(member.memberId);
+                        $('#member-memberName').val(member.memberName);
+                        $('#member-phone').val(member.phone);
+                        $('#member-memberLevel').val(member.memberLevel);
+                        $('#member-account').val(member.account);
+                        $('#member-password').val(member.password);
+                        $('#member-email').val(member.email);
+                        $('#member-totalAmount').val(member.totalAmount);
+                        $('#creatUpdat').empty();
+                        $('#creatUpdat').append(
+                        		'<button type="button" id="update-member" class="btn btn-primary"><i class="bi bi-person-gear"></i> Update</button>'+
+                        		'<button type="button" id="Cancel" class="btn btn-primary"><i class="bi bi-person-gear"></i> Cancel</button>');
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('Failed to load member: ' + errorThrown);
+                    });
+            });
+            
+            $('body').on("click", '#Cancel', function () {
+            	clearForm();
+                $('#creatUpdat').empty();
+                $('#creatUpdat').append('<button type="button" id="create-member" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create</button>');
+            });
+
+            // Clear form
+            function clearForm() {
+                $('#member-memberId').val('');
+                $('#member-memberName').val('');
+                $('#member-phone').val('');
+                $('#member-memberLevel').val('');
+                $('#member-account').val('');
+                $('#member-password').val('');
+                $('#member-email').val('');
+                $('#member-totalAmount').val('');
+            }
+        });
+    </script>
+</body>
+
+</html>
