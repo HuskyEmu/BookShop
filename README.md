@@ -26,8 +26,7 @@ A comprehensive e-commerce platform for purchasing e-books, featuring both a use
 
 ## 流程圖
 
-<<<<<<< HEAD
-![流程圖](./images/flow.png)
+![流程圖](./images/FLOW.png)
 
 
 ---
